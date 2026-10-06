@@ -64,7 +64,8 @@ async function open(pc, pairCode) {
   if (!found) return list(`${esc(pc.n)} isn't known any more. Pair this phone again.`);
   if (!found.url) {
     const seen = new Date(found.updated_at);
-    return list(`<b>${esc(found.name || pc.n)}</b> is off, or remote access is switched off in Ninja Link.<br><span class="muted">Last seen ${seen.toLocaleString()}.</span>`);
+    return list(`<b>${esc(found.name || pc.n)}</b> is off, or remote access is switched off in Ninja Link.<br><span class="muted">Last seen ${seen.toLocaleString()}.</span>` +
+      `<br><br><b>Turn it on:</b> with its smart plug (Alexa / Google Home app, or say "Alexa, turn on my PC" if you made that routine): plug off, wait 5 seconds, plug on. Then give it a minute and press Open.`);
   }
   location.replace(found.url + "/#" + (pairCode ? "pair=" + encodeURIComponent(pairCode) + "&" : "") + "t=" + encodeURIComponent(pc.t));
 }
