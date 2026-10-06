@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ninja Apps</title>
+<meta name="description" content="Free Windows apps for gamers and FiveM players: recording, boost, stats overlay, wallpapers and more.">
+<link rel="icon" href="https://github.com/silentninjasn/dojo-apps/releases/download/dojo-apps/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0908;
+    --card: #131211;
+    --card-2: #1A1817;
+    --border: #262422;
+    --text: #EEEBE6;
+    --sub: #8D8983;
+    --faint: #5E5A55;
+    --gold: #CDA663;
+    --gold-soft: rgba(205, 166, 99, .14);
+    --gold-grad: linear-gradient(180deg, #E9C987 0%, #B88A3E 100%);
+    --discord: #5865F2;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 Inter, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  img { display: block; max-width: 100%; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 16px; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(10, 9, 8, .82); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .04em; text-decoration: none; }
+  .brand img { width: 34px; height: 34px; border-radius: 8px; }
+  .brand span { color: var(--gold); }
+  nav .links { display: flex; gap: 22px; margin-left: auto; font-size: 14px; font-weight: 500; }
+  nav .links a { color: var(--sub); text-decoration: none; }
+  nav .links a:hover { color: var(--text); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 15px;
+    text-decoration: none; border: 1px solid var(--border); background: var(--card-2);
+    cursor: pointer; transition: transform .15s, filter .15s, background .15s;
+  }
+  .btn:hover { transform: translateY(-1px); background: #221F1D; }
+  .btn.gold { background: var(--gold-grad); color: #1A1306; border-color: #6B5428; }
+  .btn.gold:hover { filter: brightness(1.08); }
+  .btn.discord { background: var(--discord); border-color: var(--discord); color: #fff; }
+  .btn.discord:hover { filter: brightness(1.1); }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+
+  /* Hero */
+  .hero { padding: 88px 0 64px; text-align: center; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -40% 10% auto; height: 520px;
+    background: radial-gradient(closest-side, rgba(205,166,99,.18), transparent);
+    pointer-events: none;
+  }
+  .eyebrow { color: var(--gold); font-weight: 700; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; }
+  .hero h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.05; margin: 14px auto 18px; max-width: 820px; letter-spacing: -.02em; }
+  .hero h1 em { font-style: normal; background: var(--gold-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { color: var(--sub); font-size: 18px; max-width: 620px; margin: 0 auto 30px; }
+  .hero .ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .hero small { display: block; margin-top: 14px; color: var(--faint); font-size: 13px; }
+
+  /* App grid */
+  section { padding: 56px 0; }
+  h2.title { font-size: clamp(26px, 3.4vw, 36px); margin: 6px 0 8px; letter-spacing: -.01em; }
+  .lead { color: var(--sub); margin: 0 0 32px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; text-decoration: none; display: flex; flex-direction: column;
+    transition: border-color .2s, transform .2s;
+  }
+  .card:hover { border-color: #6B5428; transform: translateY(-3px); }
+  .card .shot { aspect-ratio: 16 / 10; background: #000 center top / cover no-repeat; border-bottom: 1px solid var(--border); }
+  .card .shot.empty { display: grid; place-items: center; background: radial-gradient(circle, #1d1a16, #0d0c0b); }
+  .card .shot.empty img { width: 96px; height: 96px; border-radius: 20px; }
+  .card .body { padding: 18px 20px 20px; display: flex; gap: 14px; align-items: flex-start; }
+  .card .body img { width: 48px; height: 48px; border-radius: 12px; flex: none; }
+  .card h3 { margin: 0; font-size: 18px; }
+  .card p { margin: 4px 0 0; color: var(--sub); font-size: 14px; line-height: 1.5; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); background: var(--gold-soft); padding: 3px 8px; border-radius: 6px; margin-top: 10px; }
+
+  /* App detail */
+  .app { border-top: 1px solid var(--border); scroll-margin-top: 64px; }
+  .app-head { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-bottom: 24px; }
+  .app-head img { width: 72px; height: 72px; border-radius: 16px; }
+  .app-head h2 { margin: 0; font-size: clamp(26px, 3.4vw, 34px); }
+  .app-head .meta { color: var(--sub); font-size: 14px; }
+  .app-head .actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+  .app-cols { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+  .viewer { background: #000; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; cursor: zoom-in; }
+  .viewer img { width: 100%; aspect-ratio: 16 / 10; object-fit: contain; background: #000; }
+  .thumbs { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .thumbs button {
+    flex: none; width: 104px; aspect-ratio: 16 / 10; border-radius: 8px; padding: 0;
+    border: 2px solid transparent; background: #000 center top / cover no-repeat; cursor: pointer; opacity: .6;
+    transition: opacity .15s, border-color .15s;
+  }
+  .thumbs button:hover { opacity: 1; }
+  .thumbs button.on { border-color: var(--gold); opacity: 1; }
+  .desc p { margin: 0 0 14px; color: #CFCBC4; }
+  .desc ul { margin: 0 0 14px; padding: 0; list-style: none; }
+  .desc li { position: relative; padding-left: 22px; margin-bottom: 8px; color: #CFCBC4; }
+  .desc li::before { content: ""; position: absolute; left: 4px; top: 10px; width: 7px; height: 7px; border-radius: 2px; background: var(--gold); transform: rotate(45deg); }
+  .note { font-size: 13px; color: var(--sub); border-left: 2px solid var(--gold); padding: 8px 12px; background: var(--gold-soft); border-radius: 0 8px 8px 0; }
+
+  /* Store promo */
+  .promo {
+    background: linear-gradient(135deg, #171411, #0F0E0D); border: 1px solid #3A2F1E;
+    border-radius: 22px; padding: 40px; display: flex; gap: 32px; align-items: center; flex-wrap: wrap;
+  }
+  .promo img { width: 112px; height: 112px; border-radius: 24px; }
+  .promo div { flex: 1; min-width: 260px; }
+  .promo h2 { margin: 0 0 8px; }
+  .promo p { margin: 0; color: var(--sub); }
+
+  /* FAQ */
+  details { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { color: var(--sub); margin: 10px 0 0; }
+
+  footer { border-top: 1px solid var(--border); padding: 32px 0 48px; color: var(--faint); font-size: 14px; }
+  footer .wrap { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+
+  /* Lightbox */
+  .lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; padding: 24px; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  .lb-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; border: 1px solid #333; background: rgba(20,20,20,.8); color: #fff; font-size: 22px; cursor: pointer; }
+  .lb-btn.prev { left: 16px; } .lb-btn.next { right: 16px; }
+  .lb-close { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #333; background: rgba(20,20,20,.8); color: #fff; font-size: 22px; cursor: pointer; }
+
+  @media (max-width: 860px) {
+    .app-cols { grid-template-columns: 1fr; }
+    nav .links { display: none; }
+    .app-head .actions { margin-left: 0; width: 100%; }
+    .promo { padding: 28px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="https://github.com/silentninjasn/dojo-apps/releases/download/dojo-apps/icon.png" alt=""> NINJA <span>APPS</span></a>
+    <div class="links">
+      <a href="#apps">Apps</a>
+      <a href="#store">Dojo Apps</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://discord.gg/QCebwgDCdS" target="_blank" rel="noopener">Discord</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow">Free apps for Windows</div>
+    <h1>Tools that make your <em>gaming setup</em> better</h1>
+    <p>Record your best moments, boost your PC before you play, watch your FPS in game, and run FiveM from one place. Every app is free.</p>
+    <div class="ctas">
+      <a class="btn gold" href="#apps">See the apps</a>
+      <a class="btn" id="hero-dl" href="https://github.com/silentninjasn/dojo-apps/releases/download/dojo-apps/DojoApps-Setup-1.0.0.exe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
+        Get Dojo Apps
+      </a>
+    </div>
+    <small>Windows 10 and 11</small>
+  </div>
+</header>
+
+<section id="apps">
+  <div class="wrap">
+    <div class="eyebrow">The apps</div>
+    <h2 class="title">Pick an app to see it in action</h2>
+    <p class="lead">Click any app for screenshots and everything it can do.</p>
+    <div class="grid" id="grid"></div>
+  </div>
+</section>
+
+<div id="details"></div>
+
+<section id="store">
+  <div class="wrap">
+    <div class="promo">
+      <img src="https://github.com/silentninjasn/dojo-apps/releases/download/dojo-apps/icon.png" alt="Dojo Apps">
+      <div>
+        <div class="eyebrow">The easy way</div>
+        <h2>Get them all with Dojo Apps</h2>
+        <p>Dojo Apps is the home of every Ninja app. Install any app in one click, get updates as soon as they're out, and open your apps from a small desktop widget.</p>
+      </div>
+      <a class="btn gold" id="store-dl" href="https://github.com/silentninjasn/dojo-apps/releases/download/dojo-apps/DojoApps-Setup-1.0.0.exe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
+        Download Dojo Apps
+      </a>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap" style="max-width: 820px;">
+    <div class="eyebrow">Questions</div>
+    <h2 class="title" style="margin-bottom: 24px;">FAQ</h2>
+    <details><summary>Are the apps free?</summary><p>Yes. Every app is free to download and use.</p></details>
+    <details><summary>Windows says it protected my PC. Is that normal?</summary><p>Yes. The apps are new and not yet code-signed, so SmartScreen may warn you the first time. Click <b>More info</b>, then <b>Run anyway</b>.</p></details>
+    <details><summary>Why do Ninja Stats, Ninja Toolbox and Ninja Link ask for administrator?</summary><p>Reading your FPS and your CPU and GPU sensors needs administrator rights in Windows, and so does letting your phone end or pause any app with Ninja Link. The other apps run normally.</p></details>
+    <details><summary>Is Ninja Link safe?</summary><p>Remote access is off until you switch it on. Only phones you pair (by scanning a QR code on your PC) can connect, every connection needs your PIN, wrong guesses lock it out, and your PC shows a pop-up whenever a phone connects. Nobody else, the developer included, can reach your PC.</p></details>
+    <details><summary>Do I need Dojo Apps?</summary><p>No. You can download any app on its own. Dojo Apps just makes installing and updating them easier.</p></details>
+    <details><summary>Something isn't working. Where do I get help?</summary><p>Press <b>Support</b> inside any app to message the developer, or join the Discord server.</p></details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>&copy; <span id="yr"></span> SilentNinja &middot; Ninja Apps</span>
+    <a class="btn discord" href="https://discord.gg/QCebwgDCdS" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.6 1.2a18.4 18.4 0 0 0-5.6 0L8.6 3a19.7 19.7 0 0 0-4.9 1.5C.6 9.1-.3 13.6.1 18.1a20 20 0 0 0 6 3l1.3-2.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.7ZM8 15.4c-1.2 0-2.2-1.1-2.2-2.4S6.8 10.6 8 10.6s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z"/></svg>
+      Join the Discord
+    </a>
+  </div>
+</footer>
+
+<div class="lightbox" id="lb">
+  <button class="lb-close" aria-label="Close">&times;</button>
+  <button class="lb-btn prev" aria-label="Previous">&#8249;</button>
+  <img alt="">
+  <button class="lb-btn next" aria-label="Next">&#8250;</button>
+</div>
+
+<script>
+const REPO = "silentninjasn/dojo-apps";
+const RAW = `https://raw.githubusercontent.com/${REPO}/main/`;
+const DL = `https://github.com/${REPO}/releases/download/`;
+
+// Built-in copy of the store listings, so the site works even if GitHub's API is busy.
+// On load the site also reads the live releases, so new apps, versions and screenshots show up on their own.
+const APPS = [
+  {
+    slug: "ninja-toolbox", name: "Ninja Toolbox", category: "Gaming", version: "1.0.0",
+    summary: "Everything for FiveM in one app: launcher, recording, boost, stats and more",
+    setup: "NinjaToolbox-Setup-1.0.0.exe", admin: true,
+    shots: [1,2,3,4,5,6].map(n => `screenshots/ninja-toolbox/20261006012709-${n}.png`),
+    body: `Everything you use for FiveM, in one app. Save your servers and join with one click, or press PLAY to boost your PC, show your stats, start instant replay and connect in one go. Clear FiveM's cache when the game gets stuck loading.
+
+Record clips, keep instant replay running and take screenshots. Boost closes or pauses the apps you don't need and puts them back afterwards, and auto boost turns it on by itself whenever you open FiveM or another game, then off when you close it. The stats overlay shows FPS, temperatures, usage, and internet speed and ping in game.
+
+Keep jobs and locations with screenshots, postals, what you need and every step. Work out crafting materials for any amount. Timers, counters and a stopwatch with in-game hotkeys, plus notes. Save screen layouts that move Discord, OBS, FiveM and anything else to the right monitor. Start a crew to share jobs and recipes with your friends.
+
+Already use Ninja Recording, Ninja Boost or Ninja Stats? Their settings come over automatically. Runs as administrator (needed for the FPS counter).`
+  },
+  {
+    slug: "ninja-recording", name: "Ninja Recording", category: "Media", version: "1.0.0",
+    summary: "Record, replay and share your best gaming moments",
+    setup: "NinjaRecording-Setup-1.0.0.exe",
+    shots: [1,2,3,4,5,6].map(n => `screenshots/ninja-recording/20261006012709-${n}.png`),
+    body: `Never miss a moment. Ninja Recording records your games with sound, keeps instant replay running in the background so you can save the last few minutes with a hotkey, and keeps every clip in one tidy library.
+
+- Record, replay and keep your clips in one place
+- Game audio and your mic on separate tracks, with automatic volume so your voice sits clearly above the game
+- Share clips with friends straight from your PC
+- Post to Discord, get a clip link, or open the YouTube, TikTok or X upload page
+- Screenshots with a hotkey
+- Built-in player and editor: trim, rename, delete and search your clips
+- Pop-ups over your game when a clip is saved
+- Starts with Windows, ready for your hotkeys`
+  },
+  {
+    slug: "ninja-boost", name: "Ninja Boost", category: "Gaming", version: "1.0.0",
+    summary: "One-click gaming mode with game profiles",
+    setup: "NinjaBoost-Setup-1.0.0.exe",
+    shots: [1,2,3,4].map(n => `screenshots/ninja-boost/20261006012709-${n}.png`),
+    body: `One click before you play. Ninja Boost closes or pauses the background apps you don't need, switches Windows to a faster power plan, starts Discord and your game, moves their windows where you want them, and puts everything back the way it was when you stop playing.
+
+- Game profiles: every game has its own settings (apps to close, power plan, Discord), so FiveM and Fortnite can each boost their own way
+- Auto boost: turns itself on when you start a game from anywhere (Steam, a desktop icon, the launcher) and off again when the game closes
+- Pause apps instead of closing them: they freeze, stop using your CPU and hand back their memory, then carry on exactly where they were
+- Add any game: an .exe, a desktop shortcut, or a Steam link
+- Choose which apps to close and which ones reopen afterwards
+- High or Ultimate Performance while you play, then back to your usual plan
+- Opens the game and Discord on the monitor you choose, or in an exact saved spot
+- Spots when your game closes and restores everything automatically
+- One-click desktop shortcuts that boost and launch a game, and it can start with Windows
+- If it's ever closed mid-game, it offers to restore everything next time it opens`
+  },
+  {
+    slug: "ninja-stats", name: "Ninja Stats", category: "Gaming", version: "1.0.0",
+    summary: "Live FPS, frame times, temps and usage on top of your games",
+    setup: "NinjaStats-Setup-1.0.0.exe", admin: true,
+    shots: [1,2,3,4,5].map(n => `screenshots/ninja-stats/20261006012709-${n}.png`),
+    body: `A live performance overlay for your games. See FPS, frame time, 1% lows and a frame time graph, plus CPU and GPU usage, temperatures, clocks and power, RAM and VRAM, and your internet: download and upload speed and ping, right on top of whatever you're playing.
+
+Make it yours: pick which stats show and in what order, rename them, choose fonts, colours, background and size, start from a theme (Ninja Gold, Afterburner, Minimal, Neon, Stealth, Top bar), and drag it anywhere on any monitor. Values can turn orange or red when your CPU or GPU gets too hot or your ping gets too high. Hotkeys show and hide it in game, and it can hide itself from recordings. A built-in speed test shows the most your connection can do.
+
+Works with DirectX 9 to 12, Vulkan and OpenGL in borderless or windowed mode. Runs as administrator (needed to read frame timings and sensors). CPU temperature uses the signed PawnIO driver, which the installer can add for you.`
+  },
+  {
+    slug: "ninja-wallpaper-editor", name: "Ninja Wallpaper Editor", category: "Tools", version: "1.0.0",
+    summary: "A different wallpaper on every screen: pictures, videos and GIFs",
+    setup: "NinjaWallpaperEditor-Setup-1.0.0.exe",
+    shots: [1,2].map(n => `screenshots/ninja-wallpaper-editor/20261006012709-${n}.png`),
+    body: `Give every screen its own wallpaper. Ninja Wallpaper Editor shows all your monitors (portrait ones too) laid out the way Windows has them. Click a screen, or drop a file on it, and pick a picture, a video or a GIF.
+
+Pictures are set in Windows itself, so they stay even when the app is closed. Videos and GIFs play muted and loop behind your desktop icons, and they pause on their own when a game or a maximised window covers the screen, so they don't cost you FPS. Use one wallpaper on every screen in a click, choose how it fits (Fill, Fit, Stretch, Center), and start it with Windows so your video wallpapers come back after a restart.`
+  },
+  {
+    slug: "ninja-link", name: "Ninja Link", category: "Tools", version: "1.0.0",
+    summary: "Control your PC from your phone, from anywhere",
+    setup: "NinjaLink-Setup-1.0.0.exe", admin: true,
+    adminNote: "Asks for administrator when it starts. Windows needs this so your phone can end or pause any app and type into admin windows.",
+    shots: [],
+    body: `Control your PC from your phone, from anywhere. See the screen live and use the mouse and keyboard, see everything that's running and close, end or pause it, and lock, sleep, restart or shut down the PC. With a smart plug and Alexa or Google Home, you can even turn it on.
+
+Pair your phone once by scanning a QR code; after that it opens like an app from your home screen (nothing to install from an app store). Every connection needs your PIN, wrong guesses lock it out, and the PC shows a pop-up whenever a phone connects. Remote access stays off until you switch it on.`
+  }
+];
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const icon = a => `${DL}${a.slug}/icon.png`;
+const download = a => a.setupUrl || `${DL}${a.slug}/${a.setup}`;
+
+// Store text: blank-line paragraphs, "- " lines become bullet lists. Support boilerplate is dropped.
+function renderBody(text) {
+  return text.trim().split(/\n\s*\n/)
+    .filter(p => !/^Need help\?/.test(p.trim()))
+    .map(p => {
+      const lines = p.trim().split("\n");
+      if (lines.every(l => l.trim().startsWith("- ")))
+        return "<ul>" + lines.map(l => `<li>${esc(l.trim().slice(2))}</li>`).join("") + "</ul>";
+      return lines.map(l => l.trim().startsWith("- ") ? `<ul><li>${esc(l.trim().slice(2))}</li></ul>` : `<p>${esc(l)}</p>`).join("");
+    }).join("");
+}
+
+const dlIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>`;
+
+function render(apps) {
+  document.getElementById("grid").innerHTML = apps.map(a => `
+    <a class="card" href="#${a.slug}">
+      ${a.shots.length
+        ? `<div class="shot" style="background-image:url('${RAW + a.shots[0]}')"></div>`
+        : `<div class="shot empty"><img src="${icon(a)}" alt=""></div>`}
+      <div class="body">
+        <img src="${icon(a)}" alt="">
+        <div>
+          <h3>${esc(a.name)}</h3>
+          <p>${esc(a.summary)}</p>
+          <span class="tag">${esc(a.category)}</span>
+        </div>
+      </div>
+    </a>`).join("");
+
+  document.getElementById("details").innerHTML = apps.map(a => `
+    <section class="app" id="${a.slug}">
+      <div class="wrap">
+        <div class="app-head">
+          <img src="${icon(a)}" alt="">
+          <div>
+            <h2>${esc(a.name)}</h2>
+            <div class="meta">${esc(a.category)} &middot; Version ${esc(a.version)} &middot; Windows</div>
+          </div>
+          <div class="actions">
+            <a class="btn gold" href="${download(a)}">${dlIcon} Download</a>
+          </div>
+        </div>
+        <div class="app-cols">
+          <div>
+            ${a.shots.length ? `
+              <div class="viewer" data-app="${a.slug}"><img src="${RAW + a.shots[0]}" alt="${esc(a.name)} screenshot" loading="lazy"></div>
+              <div class="thumbs">${a.shots.map((s, i) =>
+                `<button class="${i ? "" : "on"}" data-app="${a.slug}" data-i="${i}" style="background-image:url('${RAW + s}')" aria-label="Screenshot ${i + 1}"></button>`).join("")}
+              </div>` : ""}
+          </div>
+          <div class="desc">
+            ${renderBody(a.body)}
+            ${a.admin ? `<p class="note">${esc(a.adminNote || "Asks for administrator when it starts. Windows needs this for the FPS counter and sensors.")}</p>` : ""}
+          </div>
+        </div>
+      </div>
+    </section>`).join("");
+
+  wireGallery(apps);
+}
+
+// Galleries + lightbox
+const lb = document.getElementById("lb"), lbImg = lb.querySelector("img");
+let lbShots = [], lbIndex = 0;
+function showLb(i) { lbIndex = (i + lbShots.length) % lbShots.length; lbImg.src = RAW + lbShots[lbIndex]; }
+function wireGallery(apps) {
+  const bySlug = Object.fromEntries(apps.map(a => [a.slug, a]));
+  document.querySelectorAll(".thumbs button").forEach(b => b.onclick = () => {
+    const a = bySlug[b.dataset.app], i = +b.dataset.i;
+    const viewer = document.querySelector(`.viewer[data-app="${a.slug}"]`);
+    viewer.querySelector("img").src = RAW + a.shots[i];
+    viewer.dataset.i = i;
+    b.parentElement.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+  });
+  document.querySelectorAll(".viewer").forEach(v => v.onclick = () => {
+    lbShots = bySlug[v.dataset.app].shots; showLb(+(v.dataset.i || 0)); lb.classList.add("open");
+  });
+}
+lb.querySelector(".prev").onclick = e => { e.stopPropagation(); showLb(lbIndex - 1); };
+lb.querySelector(".next").onclick = e => { e.stopPropagation(); showLb(lbIndex + 1); };
+lb.onclick = e => { if (e.target === lb || e.target.classList.contains("lb-close")) lb.classList.remove("open"); };
+document.addEventListener("keydown", e => {
+  if (!lb.classList.contains("open")) return;
+  if (e.key === "Escape") lb.classList.remove("open");
+  if (e.key === "ArrowLeft") showLb(lbIndex - 1);
+  if (e.key === "ArrowRight") showLb(lbIndex + 1);
+});
+
+document.getElementById("yr").textContent = new Date().getFullYear();
+render(APPS);
+
+// Live update from the store releases (one GitHub API call; falls back silently to the built-in list).
+fetch(`https://api.github.com/repos/${REPO}/releases?per_page=50`)
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(releases => {
+    const known = Object.fromEntries(APPS.map(a => [a.slug, a]));
+    const apps = [];
+    for (const rel of releases) {
+      const m = /<!--\s*dojo:(\{[\s\S]*?\})\s*-->/.exec(rel.body || "");
+      if (!m) continue;
+      let meta; try { meta = JSON.parse(m[1]); } catch { continue; }
+      const setup = (rel.assets || []).find(x => /\.(exe|msi|zip)$/i.test(x.name));
+      if (rel.tag_name === "dojo-apps") {
+        if (setup) ["hero-dl", "store-dl"].forEach(id => document.getElementById(id).href = setup.browser_download_url);
+        continue;
+      }
+      const base = known[rel.tag_name] || {};
+      const text = (rel.body || "").replace(m[0], "").trim();
+      apps.push({
+        ...base,
+        slug: rel.tag_name,
+        name: rel.name || base.name || rel.tag_name,
+        category: meta.category || base.category || "",
+        version: meta.version || base.version || "",
+        summary: base.summary || meta.summary || "",
+        shots: meta.screenshots || base.shots || [],
+        body: text || base.body || meta.summary || "",
+        setupUrl: setup ? setup.browser_download_url : null
+      });
+    }
+    if (!apps.length) return;
+    // Keep the hand-picked order, new apps go at the end.
+    const order = APPS.map(a => a.slug);
+    apps.sort((x, y) => (order.indexOf(x.slug) + 1 || 99) - (order.indexOf(y.slug) + 1 || 99));
+    const hash = location.hash;
+    render(apps);
+    if (hash && document.querySelector(hash)) document.querySelector(hash).scrollIntoView();
+  })
+  .catch(() => {});
+</script>
+</body>
+</html>
