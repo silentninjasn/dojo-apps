@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0908">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ninja Link">
+<title>Ninja Link</title>
+<style>
+  :root { --bg:#0A0908; --card:#151413; --line:#2A2724; --text:#EEEBE6; --sub:#8D8983; --gold:#CDA663; --gold2:#E9CF91;
+          --goldgrad: linear-gradient(180deg,#FBEFCB 0%,#E3C47F 22%,#B08A45 48%,#7E5E2A 56%,#A9843F 78%,#E9CF91 100%); }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; padding: max(28px, env(safe-area-inset-top)) 16px 28px; gap: 16px; }
+  .brand { font-weight: 900; font-size: 26px; letter-spacing: .5px; margin-top: 8px; }
+  .brand b { background: var(--goldgrad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .card { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .pc { display: flex; gap: 10px; align-items: center; }
+  .pc .name { flex: 1; font-weight: 800; font-size: 18px; overflow: hidden; text-overflow: ellipsis; }
+  button { font: inherit; color: inherit; background: #1C1A18; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; cursor: pointer; }
+  button.gold { background: var(--goldgrad); color: #14100A; border-color: var(--gold2); font-weight: 800; }
+  button.small { padding: 6px 10px; font-size: 13px; color: var(--sub); }
+  .muted { color: var(--sub); font-size: 14px; }
+  .err { color: #FF8A80; font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="brand">NINJA <b>LINK</b></div>
+  <div id="out" class="card"><div class="muted">Loading…</div></div>
+  <div class="muted" style="max-width:420px;text-align:center">Tip: add this page to your home screen (Share → Add to Home Screen) so Ninja Link opens like an app.</div>
+<script>
+"use strict";
+// Finds a paired PC: asks the lookup service where it is right now, then opens it with this phone's key.
+// Keys stay in the # of the address (never sent to a server) and in this phone's storage.
+const SUPABASE = "https://yzarcmrxrwjptzyzmnsg.supabase.co";
+const KEY = "sb_publishable_KD2zQFafRW5vFeIj8cZQ_A_mUawA6aQ";
+const out = document.getElementById("out");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function load() { try { return JSON.parse(localStorage.getItem("ninjaLinkPCs") || "[]"); } catch { return []; } }
+function save(list) { localStorage.setItem("ninjaLinkPCs", JSON.stringify(list)); }
+function newKey() {
+  const b = new Uint8Array(32); crypto.getRandomValues(b);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function where(pc) {
+  const r = await fetch(SUPABASE + "/rest/v1/rpc/link_lookup", {
+    method: "POST", headers: { "Content-Type": "application/json", apikey: KEY },
+    body: JSON.stringify({ p_device: pc.d, p_lookup: pc.k }),
+  });
+  if (!r.ok) throw new Error("The lookup service didn't answer (" + r.status + ").");
+  const rows = await r.json();
+  return rows[0] || null;
+}
+
+async function open(pc, pairCode) {
+  out.innerHTML = `<div class="muted">Finding <b>${esc(pc.n)}</b>…</div>`;
+  let found;
+  try { found = await where(pc); } catch (e) { return list(e.message); }
+  if (!found) return list(`${esc(pc.n)} isn't known any more. Pair this phone again.`);
+  if (!found.url) {
+    const seen = new Date(found.updated_at);
+    return list(`<b>${esc(found.name || pc.n)}</b> is off, or remote access is switched off in Ninja Link.<br><span class="muted">Last seen ${seen.toLocaleString()}.</span>`);
+  }
+  location.replace(found.url + "/#" + (pairCode ? "pair=" + encodeURIComponent(pairCode) + "&" : "") + "t=" + encodeURIComponent(pc.t));
+}
+
+function list(problem) {
+  const pcs = load();
+  if (!pcs.length) {
+    out.innerHTML = `<div style="font-weight:800;font-size:18px">No PCs yet</div><div class="muted">On your PC, open Ninja Link → Pair a phone, and scan the QR code with this phone's camera.</div>`;
+    return;
+  }
+  out.innerHTML = (problem ? `<div class="err">${problem}</div>` : "") + pcs.map((pc, i) => `
+    <div class="pc"><div class="name">🖥 ${esc(pc.n)}</div>
+      <button class="small" onclick="forget(${i})">Remove</button>
+      <button class="gold" onclick="go(${i})">Open</button></div>`).join("");
+}
+window.go = i => open(load()[i]);
+window.forget = i => {
+  const pcs = load();
+  if (!confirm(`Remove ${pcs[i].n} from this phone? You'd need to pair again.`)) return;
+  pcs.splice(i, 1); save(pcs); list();
+};
+
+(function start() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (location.hash) history.replaceState(null, "", location.pathname);
+  const pcs = load();
+  if (h.get("d") && h.get("k") && h.get("p")) {
+    // Just scanned the QR on the PC: remember this PC (with a key made on this phone), then pair.
+    let pc = pcs.find(x => x.d === h.get("d"));
+    if (!pc) { pc = { d: h.get("d"), k: h.get("k"), n: h.get("n") || "My PC", t: newKey() }; pcs.push(pc); }
+    else { pc.k = h.get("k"); pc.n = h.get("n") || pc.n; }
+    save(pcs);
+    return open(pc, h.get("p"));
+  }
+  if (pcs.length === 1) return open(pcs[0]);
+  list();
+})();
+</script>
+</body>
+</html>
