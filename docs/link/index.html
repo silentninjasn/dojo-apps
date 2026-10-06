@@ -62,12 +62,55 @@ async function open(pc, pairCode) {
   let found;
   try { found = await where(pc); } catch (e) { return list(e.message); }
   if (!found) return list(`${esc(pc.n)} isn't known any more. Pair this phone again.`);
-  if (!found.url) {
-    const seen = new Date(found.updated_at);
-    return list(`<b>${esc(found.name || pc.n)}</b> is off, or remote access is switched off in Ninja Link.<br><span class="muted">Last seen ${seen.toLocaleString()}.</span>` +
-      `<br><br><b>Turn it on:</b> with its smart plug (Alexa / Google Home app, or say "Alexa, turn on my PC" if you made that routine): plug off, wait 5 seconds, plug on. Then give it a minute and press Open.`);
+  const name = esc(found.name || pc.n), seen = new Date(found.updated_at);
+  // The PC checks in every 5 minutes while Ninja Link runs, and says goodbye when Windows shuts down.
+  const running = found.online && Date.now() - seen.getTime() < STALE_MS;
+  if (running && found.url) {
+    location.replace(found.url + "/#" + (pairCode ? "pair=" + encodeURIComponent(pairCode) + "&" : "") + "t=" + encodeURIComponent(pc.t));
+    return;
   }
-  location.replace(found.url + "/#" + (pairCode ? "pair=" + encodeURIComponent(pairCode) + "&" : "") + "t=" + encodeURIComponent(pc.t));
+  if (running) return list(`<b>${name}</b> is on, but remote access is switched off in Ninja Link.<br><span class="muted">Switch it on at the PC (Ninja Link → Remote access).</span>`);
+  offline(pc, found, name, seen);
+}
+
+const STALE_MS = 12 * 60 * 1000;
+
+function wakeLinks(found) {
+  try { return JSON.parse(found.wake_links || "[]").filter(w => /^https:\/\//.test(w.url)); } catch { return []; }
+}
+
+// The PC is off (or Ninja Link stopped checking in): offer the user's turn-on links (they power-cycle its smart plug).
+function offline(pc, found, name, seen) {
+  const links = wakeLinks(found);
+  const i = load().findIndex(x => x.d === pc.d);
+  out.innerHTML = `<div style="font-weight:800;font-size:18px">🖥 ${name} is off</div>
+    <div class="muted">Last seen ${seen.toLocaleString()}.</div>` +
+    (links.length
+      ? links.map((w, j) => `<button class="gold" onclick="wake(${i},${j})">⏻ Turn on with ${esc(w.name)}</button>`).join("") +
+        `<div class="muted">Switches the PC's smart plug off and on. It takes a minute or two to start.</div>`
+      : `<div class="muted">To turn it on from here, set up a smart plug and add its link in Ninja Link on the PC (Turn on from your phone).</div>`) +
+    `<button onclick="go(${i})">Check again</button>`;
+  window._found = found;
+}
+
+window.wake = async (i, j) => {
+  const pc = load()[i], w = wakeLinks(window._found)[j];
+  if (!confirm(`Turn on ${pc.n} with ${w.name}?\n\nOnly do this if the PC is really off: it switches the PC's power off and on.`)) return;
+  out.innerHTML = `<div class="muted">Asking ${esc(w.name)} to turn on ${esc(pc.n)}…</div>`;
+  try { await fetch(w.url, { method: "GET", mode: "no-cors", cache: "no-store", referrerPolicy: "no-referrer" }); }
+  catch (e) { out.innerHTML = `<div class="err">Couldn't reach ${esc(w.name)}: ${esc(e.message)}</div><button onclick="go(${i})">Back</button>`; return; }
+  waitForPc(pc, 0);
+};
+
+// After turning it on: look every 10 seconds for up to 4 minutes, then open it.
+async function waitForPc(pc, n) {
+  out.innerHTML = `<div style="font-weight:800;font-size:18px">Turning on ${esc(pc.n)}…</div>
+    <div class="muted">Waiting for Windows and Ninja Link to start (${n * 10} s). This page opens it as soon as it's ready.</div>`;
+  let found = null;
+  try { found = await where(pc); } catch {}
+  if (found && found.online && found.url && Date.now() - new Date(found.updated_at).getTime() < STALE_MS) return open(pc);
+  if (n >= 24) return list(`${esc(pc.n)} hasn't come on yet. If it's still off, check the plug and the BIOS setting, then try again.`);
+  setTimeout(() => waitForPc(pc, n + 1), 10000);
 }
 
 function list(problem) {
