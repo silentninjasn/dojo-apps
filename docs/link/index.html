@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ninja Link">
 <title>Ninja Link</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root { --bg:#0A0908; --card:#151413; --line:#2A2724; --text:#EEEBE6; --sub:#8D8983; --gold:#CDA663; --gold2:#E9CF91;
           --goldgrad: linear-gradient(180deg,#FBEFCB 0%,#E3C47F 22%,#B08A45 48%,#7E5E2A 56%,#A9843F 78%,#E9CF91 100%); }
@@ -30,7 +33,8 @@
 <body>
   <div class="brand">NINJA <b>LINK</b></div>
   <div id="out" class="card"><div class="muted">Loading…</div></div>
-  <div class="muted" style="max-width:420px;text-align:center">Tip: add this page to your home screen (Share → Add to Home Screen) so Ninja Link opens like an app.</div>
+  <button id="installBtn" class="gold" style="display:none;max-width:420px;width:100%">📲 Install Ninja Link on this phone</button>
+  <div id="installTip" class="muted" style="max-width:420px;text-align:center"></div>
 <script>
 "use strict";
 // Finds a paired PC: asks the lookup service where it is right now, then opens it with this phone's key.
@@ -130,6 +134,22 @@ window.forget = i => {
   if (!confirm(`Remove ${pcs[i].n} from this phone? You'd need to pair again.`)) return;
   pcs.splice(i, 1); save(pcs); list();
 };
+
+// ── Install as an app (home screen icon, full screen) ──
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+if (!standalone) {
+  const tip = document.getElementById("installTip");
+  tip.textContent = /iPhone|iPad/.test(navigator.userAgent)
+    ? "Install it: tap Share (the square with the arrow) → Add to Home Screen. Then open Ninja Link from its icon."
+    : "Install it: tap ⋮ (top right) → Add to Home screen / Install app. Then open Ninja Link from its icon.";
+  let prompt = null;
+  addEventListener("beforeinstallprompt", e => {
+    e.preventDefault(); prompt = e;
+    const b = document.getElementById("installBtn"); b.style.display = "";
+    b.onclick = async () => { prompt.prompt(); await prompt.userChoice; b.style.display = "none"; };
+  });
+}
 
 (function start() {
   const h = new URLSearchParams(location.hash.slice(1));
