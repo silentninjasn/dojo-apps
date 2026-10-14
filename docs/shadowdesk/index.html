@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0908">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ShadowDesk">
+<title>ShadowDesk</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root { --bg:#0A0908; --card:#151413; --line:#2A2724; --text:#EEEBE6; --sub:#8D8983; --gold:#CDA663; --gold2:#E9CF91;
+          --goldgrad: linear-gradient(180deg,#FBEFCB 0%,#E3C47F 22%,#B08A45 48%,#7E5E2A 56%,#A9843F 78%,#E9CF91 100%); }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; padding: max(28px, env(safe-area-inset-top)) 16px 28px; gap: 16px; }
+  .brand { font-weight: 900; font-size: 26px; letter-spacing: .5px; margin-top: 8px; }
+  .brand b { background: var(--goldgrad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .card { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .title { font-weight: 800; font-size: 18px; }
+  .pc { display: flex; gap: 10px; align-items: center; }
+  .pc .name { flex: 1; min-width: 0; }
+  .pc .name div:first-child { font-weight: 800; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button { font: inherit; color: inherit; background: #1C1A18; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; cursor: pointer; }
+  button:disabled { opacity: .5; }
+  button.gold { background: var(--goldgrad); color: #14100A; border-color: var(--gold2); font-weight: 800; }
+  button.small { padding: 6px 10px; font-size: 13px; color: var(--sub); }
+  input { font: inherit; color: var(--text); background: #0F0E0D; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; width: 100%; outline: none; }
+  input:focus { border-color: #6B5428; }
+  #idInput { font-size: 26px; font-weight: 800; letter-spacing: 2px; text-align: center; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--sub); font-size: 14px; }
+  .err { color: #FF8A80; font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="brand">SHADOW<b>DESK</b></div>
+  <div id="out" class="card"><div class="muted">Loading…</div></div>
+  <form id="connect" class="card" autocomplete="off" onsubmit="return false" style="display:none">
+    <div class="title" id="connectTitle">Connect to a PC</div>
+    <div class="muted">Type the ShadowDesk ID shown in ShadowDesk on the PC. The PC then asks for your access code.</div>
+    <input id="idInput" inputmode="numeric" maxlength="11" placeholder="000 000 000" aria-label="ShadowDesk ID">
+    <div id="connectErr" class="err"></div>
+    <button class="gold" id="connectBtn" type="submit">Connect</button>
+  </form>
+  <button id="installBtn" class="gold" style="display:none;max-width:420px;width:100%">📲 Install ShadowDesk on this phone</button>
+  <div id="installTip" class="muted" style="max-width:420px;text-align:center"></div>
+<script>
+"use strict";
+// Finds a PC by its ShadowDesk ID (or by the keys from QR pairing) and opens it with this phone's own key.
+// Keys stay in the # of the address (never sent to a server) and in this phone's storage. The access code is only
+// ever typed on the PC's own page.
+const SUPABASE = "https://yzarcmrxrwjptzyzmnsg.supabase.co";
+const KEY = "sb_publishable_KD2zQFafRW5vFeIj8cZQ_A_mUawA6aQ";
+const STALE_MS = 12 * 60 * 1000;
+const out = document.getElementById("out");
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtId = id => id ? id.replace(/^(\d{3})(\d{3})(\d{3})$/, "$1 $2 $3") : "";
+
+// Saved PCs: { id (ShadowDesk ID), d + k (QR pairing keys, give the Turn on buttons), n (name), t (this phone's key) }.
+function load() {
+  try {
+    let list = JSON.parse(localStorage.getItem("shadowDeskPCs") || "null");
+    if (!list) { list = JSON.parse(localStorage.getItem("ninjaLinkPCs") || "[]"); localStorage.setItem("shadowDeskPCs", JSON.stringify(list)); }
+    return list;
+  } catch { return []; }
+}
+function save(list) { localStorage.setItem("shadowDeskPCs", JSON.stringify(list)); }
+function newKey() {
+  const b = new Uint8Array(32); crypto.getRandomValues(b);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function phoneName() {
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua)) return "iPhone";
+  if (/iPad/.test(ua)) return "iPad";
+  const m = ua.match(/Android [\d.]+; ([^;)]+)/); if (m) return m[1].replace(/Build.*/, "").trim().slice(0, 40);
+  return /Android/.test(ua) ? "Android phone" : "Phone";
+}
+
+async function rpc(fn, args) {
+  const r = await fetch(SUPABASE + "/rest/v1/rpc/" + fn, {
+    method: "POST", headers: { "Content-Type": "application/json", apikey: KEY }, body: JSON.stringify(args),
+  });
+  if (!r.ok) throw new Error("The lookup service didn't answer (" + r.status + ").");
+  return (await r.json())[0] || null;
+}
+// Paired with the QR: the private lookup (includes the Turn on links). Otherwise: by the ID.
+const where = pc => pc.d && pc.k ? rpc("link_lookup", { p_device: pc.d, p_lookup: pc.k }) : rpc("shadowdesk_find", { p_short_id: pc.id });
+
+async function open(pc, pairCode) {
+  $("connect").style.display = "none";
+  out.style.display = "";
+  out.innerHTML = `<div class="muted">Finding <b>${esc(pc.n)}</b>…</div>`;
+  let found;
+  try { found = await where(pc); } catch (e) { return home(e.message); }
+  if (!found) return home(pc.d ? `${esc(pc.n)} isn't known any more. Pair this phone again.` : `No PC has the ID ${fmtId(pc.id)} any more.`);
+  const name = esc(found.name || pc.n), seen = new Date(found.updated_at);
+  if (found.name && found.name !== pc.n) { const list = load(), x = list.find(p => p.t === pc.t); if (x) { x.n = found.name; save(list); } }
+  // The PC checks in every 5 minutes while ShadowDesk runs, and says goodbye when Windows shuts down.
+  const running = found.online && Date.now() - seen.getTime() < STALE_MS;
+  if (running && found.url) {
+    location.replace(found.url + "/#" + (pairCode ? "pair=" + encodeURIComponent(pairCode) + "&" : "") +
+      "t=" + encodeURIComponent(pc.t) + "&n=" + encodeURIComponent(phoneName()));
+    return;
+  }
+  if (running) return home(`<b>${name}</b> is on, but remote access is switched off in ShadowDesk.<br><span class="muted">Switch it on at the PC (ShadowDesk → Remote access).</span>`);
+  offline(pc, found, name, seen);
+}
+
+function wakeLinks(found) {
+  try { return JSON.parse(found.wake_links || "[]").filter(w => /^https:\/\//.test(w.url)); } catch { return []; }
+}
+
+// The PC is off (or ShadowDesk stopped checking in): offer the user's turn-on links (they power-cycle its smart plug).
+function offline(pc, found, name, seen) {
+  const links = wakeLinks(found);
+  const i = load().findIndex(x => x.t === pc.t);
+  out.innerHTML = `<div class="title">🖥 ${name} is off</div>
+    <div class="muted">Last seen ${seen.toLocaleString()}. Is the PC on, signed in to Windows, and is ShadowDesk running?</div>` +
+    (links.length
+      ? links.map((w, j) => `<button class="gold" onclick="wake(${i},${j})">⏻ Turn on with ${esc(w.name)}</button>`).join("") +
+        `<div class="muted">Switches the PC's smart plug off and on. It takes a minute or two to start.</div>`
+      : pc.d ? `<div class="muted">To turn it on from here, set up a smart plug and add its link in ShadowDesk on the PC (Turn on from your phone).</div>` : "") +
+    `<button onclick="go(${i})">Check again</button><button onclick="home()">Back</button>`;
+  window._found = found;
+}
+
+window.wake = async (i, j) => {
+  const pc = load()[i], w = wakeLinks(window._found)[j];
+  if (!confirm(`Turn on ${pc.n} with ${w.name}?\n\nOnly do this if the PC is really off: it switches the PC's power off and on.`)) return;
+  out.innerHTML = `<div class="muted">Asking ${esc(w.name)} to turn on ${esc(pc.n)}…</div>`;
+  try { await fetch(w.url, { method: "GET", mode: "no-cors", cache: "no-store", referrerPolicy: "no-referrer" }); }
+  catch (e) { out.innerHTML = `<div class="err">Couldn't reach ${esc(w.name)}: ${esc(e.message)}</div><button onclick="go(${i})">Back</button>`; return; }
+  waitForPc(pc, 0);
+};
+
+// After turning it on: look every 10 seconds for up to 4 minutes, then open it.
+async function waitForPc(pc, n) {
+  out.innerHTML = `<div class="title">Turning on ${esc(pc.n)}…</div>
+    <div class="muted">Waiting for Windows and ShadowDesk to start (${n * 10} s). This page opens it as soon as it's ready.</div>`;
+  let found = null;
+  try { found = await where(pc); } catch {}
+  if (found && found.online && found.url && Date.now() - new Date(found.updated_at).getTime() < STALE_MS) return open(pc);
+  if (n >= 24) return home(`${esc(pc.n)} hasn't come on yet. If it's still off, check the plug and the BIOS setting, then try again.`);
+  setTimeout(() => waitForPc(pc, n + 1), 10000);
+}
+
+// Home: your PCs, and the box to type an ID.
+function home(problem) {
+  const pcs = load();
+  out.style.display = pcs.length || problem ? "" : "none";
+  out.innerHTML = (problem ? `<div class="err">${problem}</div>` : "") + (pcs.length ? `<div class="title">Your PCs</div>` : "") +
+    pcs.map((pc, i) => `
+    <div class="pc"><div class="name"><div>🖥 ${esc(pc.n)}</div>${pc.id ? `<div class="muted">ID ${fmtId(pc.id)}</div>` : ""}</div>
+      <button class="small" onclick="forget(${i})">Remove</button>
+      <button class="gold" onclick="go(${i})">Open</button></div>`).join("");
+  $("connect").style.display = "";
+  $("connectTitle").textContent = pcs.length ? "Connect to another PC" : "Connect to a PC";
+}
+window.home = home;
+window.go = i => open(load()[i]);
+window.forget = i => {
+  const pcs = load();
+  if (!confirm(`Remove ${pcs[i].n} from this phone? You can add it again with its ID.`)) return;
+  pcs.splice(i, 1); save(pcs); home();
+};
+
+// Typing the ID: groups of three as you type.
+$("idInput").addEventListener("input", () => {
+  const d = $("idInput").value.replace(/\D/g, "").slice(0, 9);
+  $("idInput").value = d.replace(/(\d{3})(?=\d)/g, "$1 ");
+  $("connectErr").textContent = "";
+});
+$("connect").onsubmit = async () => {
+  const id = $("idInput").value.replace(/\D/g, "");
+  if (id.length !== 9) { $("connectErr").textContent = "The ID is 9 numbers."; return false; }
+  $("connectBtn").disabled = true; $("connectErr").textContent = "";
+  try {
+    const found = await rpc("shadowdesk_find", { p_short_id: id });
+    if (!found) { $("connectErr").textContent = "No PC has that ID. Check it in ShadowDesk on the PC."; return false; }
+    const pcs = load();
+    let pc = pcs.find(p => p.id === id);
+    if (!pc) { pc = { id, n: found.name || "PC", t: newKey() }; pcs.push(pc); save(pcs); }
+    $("idInput").value = "";
+    open(pc);
+  } catch (e) { $("connectErr").textContent = e.message; }
+  finally { $("connectBtn").disabled = false; }
+  return false;
+};
+
+// ── Install as an app (home screen icon, full screen) ──
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+if (!standalone) {
+  const tip = $("installTip");
+  tip.textContent = /iPhone|iPad/.test(navigator.userAgent)
+    ? "Keep it on your phone: tap Share (the square with the arrow) → Add to Home Screen. Then open ShadowDesk from its icon."
+    : "Keep it on your phone: tap ⋮ (top right) → Add to Home screen / Install app. Then open ShadowDesk from its icon.";
+  let prompt = null;
+  addEventListener("beforeinstallprompt", e => {
+    e.preventDefault(); prompt = e;
+    const b = $("installBtn"); b.style.display = "";
+    b.onclick = async () => { prompt.prompt(); await prompt.userChoice; b.style.display = "none"; };
+  });
+}
+
+(function start() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (location.hash) history.replaceState(null, "", location.pathname);
+  const pcs = load();
+  if (h.get("d") && h.get("k") && h.get("p")) {
+    // Just scanned the pairing QR on the PC: remember this PC (with a key made on this phone), then pair.
+    let pc = pcs.find(x => x.d === h.get("d") || (h.get("id") && x.id === h.get("id")));
+    if (!pc) { pc = { t: newKey() }; pcs.push(pc); }
+    Object.assign(pc, { d: h.get("d"), k: h.get("k"), n: h.get("n") || pc.n || "My PC" });
+    if (h.get("id")) pc.id = h.get("id");
+    save(pcs);
+    return open(pc, h.get("p"));
+  }
+  if (/^\d{9}$/.test(h.get("id") || "")) {
+    // Scanned the "open on your phone" QR: the ID is filled in. Add the page to the home screen first, then Connect.
+    home();
+    $("idInput").value = fmtId(h.get("id"));
+    return;
+  }
+  if (pcs.length === 1 && standalone) return open(pcs[0]);
+  home();
+})();
+</script>
+</body>
+</html>
