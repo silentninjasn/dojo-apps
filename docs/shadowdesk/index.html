@@ -39,7 +39,7 @@
 <body>
   <div class="brand">SHADOW<b>DESK</b></div>
   <div id="out" class="card"><div class="muted">Loading…</div></div>
-  <form id="connect" class="card" autocomplete="off" onsubmit="return false" style="display:none">
+  <form id="connect" class="card" autocomplete="off" action="javascript:void 0" style="display:none">
     <div class="title" id="connectTitle">Connect to a PC</div>
     <div class="muted">Type the ShadowDesk ID shown in ShadowDesk on the PC. The PC then asks for your access code.</div>
     <input id="idInput" inputmode="numeric" maxlength="11" placeholder="000 000 000" aria-label="ShadowDesk ID">
@@ -176,22 +176,24 @@ $("idInput").addEventListener("input", () => {
   $("idInput").value = d.replace(/(\d{3})(?=\d)/g, "$1 ");
   $("connectErr").textContent = "";
 });
-$("connect").onsubmit = async () => {
+// (preventDefault first: an async handler returns a promise, not false, so the form would reload the page.)
+$("connect").addEventListener("submit", async e => {
+  e.preventDefault();
   const id = $("idInput").value.replace(/\D/g, "");
-  if (id.length !== 9) { $("connectErr").textContent = "The ID is 9 numbers."; return false; }
-  $("connectBtn").disabled = true; $("connectErr").textContent = "";
+  if (id.length !== 9) { $("connectErr").textContent = "The ID is 9 numbers."; return; }
+  $("connectBtn").disabled = true; $("connectBtn").textContent = "Finding your PC…"; $("connectErr").textContent = "";
   try {
     const found = await rpc("shadowdesk_find", { p_short_id: id });
-    if (!found) { $("connectErr").textContent = "No PC has that ID. Check it in ShadowDesk on the PC."; return false; }
+    if (!found) { $("connectErr").textContent = "No PC has that ID. Check it in ShadowDesk on the PC."; return; }
     const pcs = load();
+    // Already saved (e.g. paired with the QR code): use that entry, so it keeps its key.
     let pc = pcs.find(p => p.id === id);
     if (!pc) { pc = { id, n: found.name || "PC", t: newKey() }; pcs.push(pc); save(pcs); }
     $("idInput").value = "";
     open(pc);
-  } catch (e) { $("connectErr").textContent = e.message; }
-  finally { $("connectBtn").disabled = false; }
-  return false;
-};
+  } catch (err) { $("connectErr").textContent = err.message; }
+  finally { $("connectBtn").disabled = false; $("connectBtn").textContent = "Connect"; }
+});
 
 // ── Install as an app (home screen icon, full screen) ──
 const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
