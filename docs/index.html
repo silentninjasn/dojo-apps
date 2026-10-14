@@ -222,8 +222,8 @@
     <h2 class="title" style="margin-bottom: 24px;">FAQ</h2>
     <details><summary>Are the apps free?</summary><p>Yes. Every app is free to download and use.</p></details>
     <details><summary>Windows says it protected my PC. Is that normal?</summary><p>Yes. The apps are new and not yet code-signed, so SmartScreen may warn you the first time. Click <b>More info</b>, then <b>Run anyway</b>.</p></details>
-    <details><summary>Why do Ninja Stats, Ninja Toolbox and Ninja Link ask for administrator?</summary><p>Reading your FPS and your CPU and GPU sensors needs administrator rights in Windows, and so does letting your phone end or pause any app with Ninja Link. The other apps run normally.</p></details>
-    <details><summary>Is Ninja Link safe?</summary><p>Remote access is off until you switch it on. Only phones you pair (by scanning a QR code on your PC) can connect, every connection needs your PIN, wrong guesses lock it out, and your PC shows a pop-up whenever a phone connects. Nobody else, the developer included, can reach your PC.</p></details>
+    <details><summary>Why do Ninja Stats, Ninja Toolbox and ShadowDesk ask for administrator?</summary><p>Reading your FPS and your CPU and GPU sensors needs administrator rights in Windows, and so does letting your phone end or pause any app with ShadowDesk. The other apps run normally.</p></details>
+    <details><summary>Is ShadowDesk safe?</summary><p>Remote access is off until you switch it on. A phone needs your PC's ID and your access code (or a QR code scanned at the PC), wrong guesses lock it out for longer each time, and your PC shows a pop-up whenever a new phone connects. You can also allow only phones that have connected before. Nobody else, the developer included, can reach your PC without your code.</p></details>
     <details><summary>Do I need Dojo Apps?</summary><p>No. You can download any app on its own. Dojo Apps just makes installing and updating them easier.</p></details>
     <details><summary>Something isn't working. Where do I get help?</summary><p>Press <b>Support</b> inside any app to message the developer, or join the Discord server.</p></details>
   </div>
@@ -339,14 +339,14 @@ For the best picture it always takes the highest quality your provider offers, o
 Your login stays on your PC (the password is encrypted). Silent IPTV is a player: it doesn't come with any channels, it plays what your own IPTV provider gives you.`
   },
   {
-    slug: "ninja-link", name: "Ninja Link", category: "Tools", version: "1.0.0",
-    summary: "Control your PC from your phone, from anywhere",
-    setup: "NinjaLink-Setup-1.0.0.exe", admin: true,
+    slug: "ninja-link", name: "ShadowDesk", category: "Tools", version: "1.0.0",
+    summary: "Control your PC from your phone, from anywhere, like TeamViewer",
+    setup: "ShadowDesk-Setup-1.0.0.exe", admin: true,
     adminNote: "Asks for administrator when it starts. Windows needs this so your phone can end or pause any app and type into admin windows.",
     shots: [],
-    body: `Control your PC from your phone, from anywhere. See the screen live and use the mouse and keyboard, see everything that's running and close, end or pause it, and lock, sleep, restart or shut down the PC. With a smart plug and Alexa or Google Home, you can even turn it on.
+    body: `Control your PC from your phone, from anywhere, like TeamViewer. Your PC gets a ShadowDesk ID: type it on your phone with your access code and you're in. Pick which monitor to see and control, use the mouse and keyboard, see everything that's running and close, end or pause it, and lock, sleep, restart or shut down the PC.
 
-Pair your phone once by scanning a QR code; after that it opens like an app from your home screen (nothing to install from an app store). Every connection needs your PIN, wrong guesses lock it out, and the PC shows a pop-up whenever a phone connects. Remote access stays off until you switch it on.`
+It opens like an app from your phone's home screen (nothing to install from an app store). Every connection needs your access code, wrong guesses lock it out, and the PC shows a pop-up whenever a new phone connects. It can keep the PC awake so it's always reachable, and with a smart plug and Alexa or Google Home you can even turn it on. Remote access stays off until you switch it on.`
   },
   {
     slug: "ninja-reticle", name: "Ninja Reticle", category: "Gaming", version: "1.0.0",
