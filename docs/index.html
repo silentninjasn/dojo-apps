@@ -383,6 +383,25 @@ Press the Windows key for Ninja Start: search your apps and files as you type, y
     body: `Make moving windows fun. Drag any window and Silent Flow animates it as it moves: it can wobble like jelly, stretch like elastic, swing from your mouse, wave like a flag, squash and bounce, send out ripples, float behind on a string, lift up, spin or rattle. When you let go it settles back neatly.
 
 Add extras on top: a trail of ghost windows, gold sparks and a soft glow. Pick how strong it is, from barely there to wild. Give each app its own animation: Discord can wobble, Chrome can swing and OBS can stretch, while everything else uses your main choice. Private: no account, and nothing is ever sent anywhere.`
+  },
+  {
+    slug: "silent-vault", name: "Silent Vault", category: "Tools", version: "1.0.0",
+    summary: "Your own encrypted password vault: logins, cards, 2FA codes and notes, kept only on your PC",
+    setup: "SilentVault-Setup-1.0.0.exe",
+    shots: [1,2,3,4].map(n => `screenshots/silent-vault/20261018130721-${n}.png`),
+    body: `Keep your passwords and private information safe in your own vault. Silent Vault stores your logins, cards, identities and secure notes in one encrypted file on your PC, locked with a master password only you know.
+
+- Logins with username, password, website and 2FA codes that refresh on their own
+- Cards, identities (address, passport, licence) and secure notes, plus your own extra fields
+- Password generator, and a strength meter on every password
+- Vault health: finds weak, reused and old passwords and logins without 2FA
+- Import your passwords from Chrome, Edge, Firefox or Bitwarden
+- Copied passwords stay out of clipboard history and clear themselves after 30 seconds
+- Locks itself when you're away, when Windows locks or when the PC sleeps
+- Hidden from screen capture, so it's safe while you stream or share your screen
+- A recovery key in case you ever forget your master password, and encrypted backups
+
+Strong encryption (AES-256), and nothing ever leaves your PC: no account, no cloud, nothing is sent anywhere. Keep your master password and recovery key safe, because nobody else can open your vault, not even us.`
   }
 ];
 
